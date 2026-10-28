@@ -64,6 +64,10 @@ import com.highcapable.yukihookapi.YukiHook
 import com.highcapable.yukihookapi.runtime.YukiHookRuntime
 import kotlinx.coroutines.Job
 
+/** 本地构建开关：暂时关闭更新检测与推广 */
+private const val ENABLE_UPDATE_CHECK = false
+private const val ENABLE_PROMOTE = false
+
 class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     companion object {
@@ -149,8 +153,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                             cancelButton()
                             noCancelable()
                         }
-                    // 推广、恰饭
-                    ProjectPromote.show(activity = this, ModuleVersion.toString())
+                    // 推广、恰饭（本地构建暂时关闭）
+                    if (ENABLE_PROMOTE) ProjectPromote.show(activity = this, ModuleVersion.toString())
                 } else {
                     homeBinding.mainOptimizeListSummaryText.text = getString(R.string.config_module_unavailable)
                     showDialog {
@@ -168,8 +172,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     /** 初始化主页的版本文本、CI 自动构建标识、检查更新和各项设置的初始状态，它们不依赖模块是否激活 */
     private fun initHomeInfo() {
-        // 检查更新
-        GithubReleaseTool.checkingForUpdate(context = this, ModuleVersion.NAME) { version, function ->
+        // 检查更新（本地构建暂时关闭）
+        if (ENABLE_UPDATE_CHECK) GithubReleaseTool.checkingForUpdate(context = this, ModuleVersion.NAME) { version, function ->
             homeBinding.mainTextReleaseVersion.apply {
                 text = getString(R.string.main_click_to_update, version)
                 isVisible = true

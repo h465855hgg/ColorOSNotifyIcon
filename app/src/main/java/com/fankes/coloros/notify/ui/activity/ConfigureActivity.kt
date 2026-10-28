@@ -68,22 +68,26 @@ import kotlinx.coroutines.Job
 
 class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
 
-    /** 名单的查看范围 */
-    private enum class ViewMode { INSTALLED, ALL, ENABLED, OVERRIDDEN }
+    /** 通知图标的状态筛选 */
+    private enum class StateFilter { ALL, ENABLED, OVERRIDDEN }
 
-    /** 当前查看范围 - 为空表示还没有选择，已安装的应用返回后默认查看已安装 */
-    private var viewMode: ViewMode? = null
+    /** 是否只看已安装的应用 */
+    private var installedOnly = false
+
+    /** 已安装筛选是否已经默认应用过 */
+    private var installedDefaultApplied = false
+
+    /** 当前状态筛选 - 与 [installedOnly] 可以叠加 */
+    private var stateFilter = StateFilter.ALL
+
+    /** 是否处于多选模式 */
+    private var isSelecting = false
+
+    /** 多选模式下已选中的应用包名 */
+    private val selectedPackages = linkedSetOf<String>()
 
     /** 已安装的应用 - 系统界面没有返回时为空 */
     private var installedApps = emptyList<InstalledAppBean>()
-
-    /** 查看范围按钮 */
-    private val viewPills get() = mapOf(
-        binding.configViewInstalled to ViewMode.INSTALLED,
-        binding.configViewAll to ViewMode.ALL,
-        binding.configViewEnabled to ViewMode.ENABLED,
-        binding.configViewOverridden to ViewMode.OVERRIDDEN
-    )
 
     /** 当前筛选条件 */
     private var filterText = ""
@@ -181,14 +185,24 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
         binding.configTitleSync.setOnClickListener { onStartRefresh() }
         // 设置选项按钮点击事件
         binding.configTitleOptions.setOnClickListener { showOptions() }
-        // 设置查看范围按钮点击事件
-        viewPills.forEach { (pill, mode) ->
-            pill.setOnClickListener {
-                // 再次点击当前选项时数据不变，直接平滑滚动到顶部
-                if (mode == (viewMode ?: ViewMode.ALL)) return@setOnClickListener binding.configListView.smoothScrollToFirstPosition()
-                viewMode = mode
-                refreshAdapterResult(isScrollToTop = true)
-            }
+        // 设置筛选按钮点击事件 - 已安装和启用状态可以叠加，再次点击取消
+        binding.configViewInstalled.setOnClickListener {
+            installedOnly = installedOnly.not()
+            refreshAdapterResult(isScrollToTop = true)
+        }
+        binding.configViewAll.setOnClickListener {
+            installedOnly = false
+            stateFilter = StateFilter.ALL
+            filterText = ""
+            refreshAdapterResult(isScrollToTop = true)
+        }
+        binding.configViewEnabled.setOnClickListener {
+            stateFilter = if (stateFilter == StateFilter.ENABLED) StateFilter.ALL else StateFilter.ENABLED
+            refreshAdapterResult(isScrollToTop = true)
+        }
+        binding.configViewOverridden.setOnClickListener {
+            stateFilter = if (stateFilter == StateFilter.OVERRIDDEN) StateFilter.ALL else StateFilter.OVERRIDDEN
+            refreshAdapterResult(isScrollToTop = true)
         }
         // 设置列表元素和 Adapter
         binding.configListView.apply {
@@ -207,12 +221,18 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
                     binding.adpAppName.text = icon.label
                     binding.adpAppPkgName.text = icon.packageName
                     binding.adpCbrName.text = getString(R.string.config_contributors, icon.contributors.joinToString())
+                    binding.adpAppCheck.apply {
+                        isVisible = isSelecting
+                        isChecked = icon.packageName in selectedPackages
+                        jumpDrawablesToCurrentState()
+                    }
                     isAppNotifyEnabledOf(icon).also { e ->
                         binding.adpAppOpenSwitch.isChecked = e
-                        binding.adpAppAllSwitch.isEnabled = e
+                        binding.adpAppOpenSwitch.isEnabled = e && isSelecting.not()
+                        binding.adpAppAllSwitch.isEnabled = e && isSelecting.not()
                     }
                     binding.adpAppOpenSwitch.setOnCheckedChangeListener { btn, b ->
-                        if (btn.isPressed.not()) return@setOnCheckedChangeListener
+                        if (btn.isPressed.not() || isSelecting) return@setOnCheckedChangeListener
                         putAppNotifyEnabledOf(icon, b)
                         binding.adpAppAllSwitch.isEnabled = b
                         refreshAdapterResult()
@@ -220,7 +240,7 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
                     }
                     binding.adpAppAllSwitch.isChecked = isAppNotifyOverlayOf(icon)
                     binding.adpAppAllSwitch.setOnCheckedChangeListener { btn, b ->
-                        if (btn.isPressed.not()) return@setOnCheckedChangeListener
+                        if (btn.isPressed.not() || isSelecting) return@setOnCheckedChangeListener
                         fun saveState() {
                             putAppNotifyOverlayOf(icon, b)
                             refreshAdapterResult()
@@ -233,6 +253,18 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
                             cancelButton { btn.isChecked = btn.isChecked.not() }
                             noCancelable()
                         } else saveState()
+                    }
+                    binding.root.setOnLongClickListener {
+                        if (isSelecting.not()) {
+                            isSelecting = true
+                            selectedPackages.clear()
+                            selectedPackages += icon.packageName
+                            refreshSelectionUi()
+                        }
+                        true
+                    }
+                    binding.root.setOnClickListener {
+                        if (isSelecting) toggleSelection(icon.packageName)
                     }
                 }
             }.apply { onChanged = { icons, commitCallback -> submitList(icons, commitCallback) } }
@@ -253,6 +285,25 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
                 neutralButton(text = getString(R.string.config_not_now))
             }
         }
+        // 多选模式的操作栏
+        binding.configBulkDone.setOnClickListener { exitSelection() }
+        binding.configBulkSelectAll.setOnClickListener {
+            selectedPackages.clear()
+            selectedPackages += iconDatas.map { it.packageName }
+            refreshSelectionUi()
+        }
+        binding.configBulkEnable.setOnClickListener { applyToSelection { putAppNotifyEnabledOf(it, true) } }
+        binding.configBulkDisable.setOnClickListener { applyToSelection { putAppNotifyEnabledOf(it, false) } }
+        binding.configBulkOverlayOn.setOnClickListener {
+            showDialog {
+                title = getString(R.string.config_override)
+                msg = getString(R.string.config_override_msg)
+                confirmButton { applyToSelection { putAppNotifyOverlayOf(it, true) } }
+                cancelButton()
+                noCancelable()
+            }
+        }
+        binding.configBulkOverlayOff.setOnClickListener { applyToSelection { putAppNotifyOverlayOf(it, false) } }
         // 装载数据
         mockLocalData()
         loadInstalledApps()
@@ -290,6 +341,10 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
         }
         // 设置返回监听事件
         addOnBackPressedEvent {
+            if (isSelecting) {
+                exitSelection()
+                return@addOnBackPressedEvent
+            }
             if (MainActivity.isActivityLive.not())
                 showDialog {
                     title = getString(R.string.common_prompt)
@@ -325,7 +380,10 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
     private fun loadInstalledApps() = SystemUITool.obtainInstalledApps(context = this) { apps ->
         if (apps.isEmpty()) return@obtainInstalledApps
         installedApps = apps
-        if (viewMode == null) viewMode = ViewMode.INSTALLED
+        if (installedDefaultApplied.not()) {
+            installedDefaultApplied = true
+            installedOnly = true
+        }
         refreshAdapterResult()
     }
 
@@ -436,15 +494,26 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
         val icons = iconDatas.toList()
         // 列表数据提交完成后再滚动，否则列表变化会打断滚动
         onChanged?.invoke(icons, if (isScrollToTop) Runnable { binding.configListView.scrollToFirstPosition() } else null)
+        val filterSummary = mutableListOf<String>()
+        if (installedOnly) filterSummary += getString(R.string.config_view_installed)
+        when (stateFilter) {
+            StateFilter.ENABLED -> filterSummary += getString(R.string.config_view_enabled)
+            StateFilter.OVERRIDDEN -> filterSummary += getString(R.string.config_view_overridden)
+            StateFilter.ALL -> Unit
+        }
+        if (filterText.isNotBlank()) filterSummary += filterText
         binding.configTitleCountText.text =
-            if (filterText.isBlank()) getString(R.string.config_included_count, icons.size)
-            else getString(R.string.config_filter_result, filterText, icons.size)
+            if (filterSummary.isEmpty()) getString(R.string.config_included_count, icons.size)
+            else getString(R.string.config_filter_summary, filterSummary.joinToString(" · "), icons.size)
         binding.configListNoDataView.apply {
             text = if (iconAllDatas.isEmpty()) getString(R.string.config_empty_no_data) else getString(R.string.config_empty_no_match)
             isVisible = icons.isEmpty()
         }
         binding.configViewInstalled.isVisible = installedApps.isNotEmpty()
-        viewPills.forEach { (pill, mode) -> pill.isSelected = mode == (viewMode ?: ViewMode.ALL) }
+        binding.configViewInstalled.isSelected = installedOnly
+        binding.configViewAll.isSelected = installedOnly.not() && stateFilter == StateFilter.ALL
+        binding.configViewEnabled.isSelected = stateFilter == StateFilter.ENABLED
+        binding.configViewOverridden.isSelected = stateFilter == StateFilter.OVERRIDDEN
         /** 已安装但名单中没有的应用，名单为空时无法判断 */
         val uncoveredApps = if (iconAllDatas.isEmpty()) emptyList() else {
             val includedPackages = iconAllDatas.map { it.packageName }.toSet()
@@ -457,18 +526,52 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
         }
     }
 
+    /** 刷新多选状态的界面 */
+    private fun refreshSelectionUi() {
+        binding.configSelectionBar.isVisible = isSelecting
+        binding.configSelectionTitle.text = getString(R.string.config_selected_count, selectedPackages.size)
+        binding.configListView.adapter?.notifyDataSetChanged()
+    }
+
+    /** 切换某个应用的选中状态 */
+    private fun toggleSelection(packageName: String) {
+        if (selectedPackages.contains(packageName)) selectedPackages -= packageName
+        else selectedPackages += packageName
+        refreshSelectionUi()
+    }
+
+    /** 退出多选模式 */
+    private fun exitSelection() {
+        isSelecting = false
+        selectedPackages.clear()
+        refreshSelectionUi()
+    }
+
+    /** 把操作应用到当前选中的应用 */
+    private fun applyToSelection(block: (NotificationIcon) -> Unit) {
+        val targets = iconAllDatas.filter { it.packageName in selectedPackages }
+        if (targets.isEmpty()) {
+            toast(getString(R.string.config_empty_no_match))
+            return
+        }
+        targets.forEach(block)
+        refreshAdapterResult()
+        SystemUITool.refreshSystemUI(context = this)
+        toast(getString(R.string.config_bulk_applied, targets.size))
+    }
+
     /**
      * 当前结果下的图标数组
      * @return [List]
      */
     private val iconDatas
         get() = iconAllDatas.filter { icon ->
-            when (viewMode) {
-                ViewMode.INSTALLED -> installedApps.any { it.packageName == icon.packageName }
-                ViewMode.ENABLED -> isAppNotifyEnabledOf(icon)
-                ViewMode.OVERRIDDEN -> isAppNotifyOverlayOf(icon)
-                else -> true
-            } && (filterText.isBlank() ||
+            (installedOnly.not() || installedApps.any { it.packageName == icon.packageName }) &&
+                (when (stateFilter) {
+                    StateFilter.ENABLED -> isAppNotifyEnabledOf(icon)
+                    StateFilter.OVERRIDDEN -> isAppNotifyOverlayOf(icon)
+                    StateFilter.ALL -> true
+                }) && (filterText.isBlank() ||
                 icon.label.lowercase().contains(filterText.lowercase()) ||
                 icon.packageName.lowercase().contains(filterText.lowercase()) ||
                 icon.contributors.any { contributor -> contributor.lowercase().contains(filterText.lowercase()) })

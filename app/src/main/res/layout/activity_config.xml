@@ -292,6 +292,133 @@
             </FrameLayout>
 
             <LinearLayout
+                android:id="@+id/config_selection_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="15dp"
+                android:layout_marginRight="15dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/bg_permotion_round"
+                android:orientation="vertical"
+                android:paddingLeft="12dp"
+                android:paddingTop="10dp"
+                android:paddingRight="12dp"
+                android:paddingBottom="10dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/config_selection_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/colorTextGray"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/config_bulk_done"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_button_round"
+                        android:paddingLeft="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingRight="14dp"
+                        android:paddingBottom="6dp"
+                        android:text="@string/config_bulk_done"
+                        android:textColor="@color/colorTextGray"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/config_bulk_select_all"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_button_round"
+                            android:paddingLeft="14dp"
+                            android:paddingTop="6dp"
+                            android:paddingRight="14dp"
+                            android:paddingBottom="6dp"
+                            android:text="@string/config_bulk_select_all"
+                            android:textColor="@color/colorTextGray"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/config_bulk_enable"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_button_round"
+                            android:paddingLeft="14dp"
+                            android:paddingTop="6dp"
+                            android:paddingRight="14dp"
+                            android:paddingBottom="6dp"
+                            android:text="@string/config_bulk_enable"
+                            android:textColor="@color/colorTextGray"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/config_bulk_disable"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_button_round"
+                            android:paddingLeft="14dp"
+                            android:paddingTop="6dp"
+                            android:paddingRight="14dp"
+                            android:paddingBottom="6dp"
+                            android:text="@string/config_bulk_disable"
+                            android:textColor="@color/colorTextGray"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/config_bulk_overlay_on"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_button_round"
+                            android:paddingLeft="14dp"
+                            android:paddingTop="6dp"
+                            android:paddingRight="14dp"
+                            android:paddingBottom="6dp"
+                            android:text="@string/config_bulk_overlay_on"
+                            android:textColor="@color/colorTextGray"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/config_bulk_overlay_off"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_button_round"
+                            android:paddingLeft="14dp"
+                            android:paddingTop="6dp"
+                            android:paddingRight="14dp"
+                            android:paddingBottom="6dp"
+                            android:text="@string/config_bulk_overlay_off"
+                            android:textColor="@color/colorTextGray"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/config_bottom_bar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

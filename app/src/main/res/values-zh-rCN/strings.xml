@@ -231,4 +231,13 @@
     <string name="about_yukihook_desc">一个现代化的 Hook API 与 Xposed 模块解决方案</string>
     <string name="about_kavaref_desc">一个使用 Kotlin 实现的现代化 Java 反射</string>
     <string name="about_copyright">未经允许不得转载、修改复制我的劳动成果</string>
+    <string name="config_filter_summary">%1$s · %2$d 个应用</string>
+    <string name="config_selected_count">已选 %1$d 项</string>
+    <string name="config_bulk_select_all">全选</string>
+    <string name="config_bulk_enable">启用</string>
+    <string name="config_bulk_disable">停用</string>
+    <string name="config_bulk_overlay_on">覆盖</string>
+    <string name="config_bulk_overlay_off">取消覆盖</string>
+    <string name="config_bulk_done">完成</string>
+    <string name="config_bulk_applied">已更新 %1$d 个应用</string>
 </resources>

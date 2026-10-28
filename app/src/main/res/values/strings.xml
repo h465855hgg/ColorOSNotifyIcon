@@ -231,4 +231,13 @@
     <string name="about_yukihook_desc">A modern hook API and Xposed module solution</string>
     <string name="about_kavaref_desc">Modern Java reflection implemented in Kotlin</string>
     <string name="about_copyright">Reproducing, modifying or copying my work without permission is prohibited</string>
+    <string name="config_filter_summary">%1$s · %2$d apps</string>
+    <string name="config_selected_count">Selected: %1$d</string>
+    <string name="config_bulk_select_all">Select all</string>
+    <string name="config_bulk_enable">Enable</string>
+    <string name="config_bulk_disable">Disable</string>
+    <string name="config_bulk_overlay_on">Override</string>
+    <string name="config_bulk_overlay_off">No override</string>
+    <string name="config_bulk_done">Done</string>
+    <string name="config_bulk_applied">Updated %1$d apps</string>
 </resources>
