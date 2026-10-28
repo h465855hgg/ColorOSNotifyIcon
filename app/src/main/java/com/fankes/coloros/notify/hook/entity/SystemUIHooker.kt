@@ -1788,12 +1788,6 @@ object SystemUIHooker : YukiBaseHooker() {
                     after { headerIconOf(instance)?.let { styleHeaderIcon(instance) } }
                     // after { headerIconOf(instance)?.let { if (!moduleStyledIcons.containsKey(it)) styleHeaderIcon(instance) } }
                 }
-                // ColorOS 16 对带会话头像的通知（如 QQ）会单独走这个方法把图标换回去，处理完再套一次模块样式
-                firstMethodOrNull {
-                    name = "updateIconWithAppIconIfNeeded"
-                }?.hook()?.after {
-                    runInSafe { headerIconOf(instance)?.let { styleHeaderIcon(instance) } }
-                }
             }
 
             // 系统会在任意时机把通知图标重新设成自己的图标，这里只兜住通知图标视图 CachingIconView
