@@ -127,8 +127,8 @@ object SystemUIHooker : YukiBaseHooker() {
     /** 原生存在的类 */
     private val NotificationEntryClass by lazyClass("${PackageName.SYSTEMUI}.statusbar.notification.collection.NotificationEntry")
 
-    /** 原生存在的类 - 通知图标视图，自身重写了 setImageDrawable */
-    private val CachingIconViewClass by lazyClass("${PackageName.SYSTEMUI}.statusbar.notification.row.CachingIconView")
+    /** 原生存在的类 - 通知图标视图，自身重写了 setImageDrawable 并带图标缓存 */
+    private val CachingIconViewClass by lazyClass("com.android.internal.widget.CachingIconView")
 
     /** 原生存在的类 */
     private val StatusBarIconClass by lazyClass("com.android.internal.statusbar.StatusBarIcon")
@@ -1796,15 +1796,35 @@ object SystemUIHooker : YukiBaseHooker() {
                 }
             }
 
-            // 系统会在任意时机把通知图标重新设成自己的 drawable，这里只兜住通知图标视图
-            CachingIconViewClass.resolve().optional().firstMethodOrNull {
-                name = "setImageDrawable"
-                parameters(Drawable::class)
-            }?.hook()?.before {
-                val iconView = instance<ImageView>()
-                if (moduleStyledIcons[iconView] == true) {
-                    moduleStyledDrawables[iconView]?.let { styled ->
-                        if (arg(0).get<Drawable>() !== styled) arg(0).set(styled)
+            // 系统会在任意时机把通知图标重新设成自己的图标，这里只兜住通知图标视图 CachingIconView
+            CachingIconViewClass.resolve().optional()?.apply {
+                firstMethodOrNull {
+                    name = "setImageDrawable"
+                    parameters(Drawable::class)
+                }?.hook()?.before {
+                    val iconView = instance<ImageView>()
+                    if (moduleStyledIcons[iconView] == true) {
+                        moduleStyledDrawables[iconView]?.let { styled ->
+                            if (arg(0).get<Drawable>() !== styled) arg(0).set(styled)
+                        }
+                    }
+                }
+                listOf(
+                    "setImageIcon" to Icon::class,
+                    "setImageResource" to Int::class,
+                    "setImageBitmap" to Bitmap::class
+                ).forEach { (name, type) ->
+                    firstMethodOrNull {
+                        this.name = name
+                        parameters(type)
+                    }?.hook()?.before {
+                        val iconView = instance<ImageView>()
+                        if (moduleStyledIcons[iconView] == true) {
+                            moduleStyledDrawables[iconView]?.let { styled ->
+                                iconView.setImageDrawable(styled)
+                                result = null
+                            }
+                        }
                     }
                 }
             }
