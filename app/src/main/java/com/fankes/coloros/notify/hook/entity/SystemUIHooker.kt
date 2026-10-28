@@ -127,8 +127,8 @@ object SystemUIHooker : YukiBaseHooker() {
     /** 原生存在的类 */
     private val NotificationEntryClass by lazyClass("${PackageName.SYSTEMUI}.statusbar.notification.collection.NotificationEntry")
 
-    /** 原生存在的类 */
-    private val ImageViewClass by lazyClass("android.widget.ImageView")
+    /** 原生存在的类 - 通知图标视图，自身重写了 setImageDrawable */
+    private val CachingIconViewClass by lazyClass("${PackageName.SYSTEMUI}.statusbar.notification.row.CachingIconView")
 
     /** 原生存在的类 */
     private val StatusBarIconClass by lazyClass("com.android.internal.statusbar.StatusBarIcon")
@@ -1796,8 +1796,8 @@ object SystemUIHooker : YukiBaseHooker() {
                 }
             }
 
-            // 系统会在任意时机把通知图标重新设成自己的 drawable，这里在框架层兜住
-            ImageViewClass.resolve().optional().firstMethodOrNull {
+            // 系统会在任意时机把通知图标重新设成自己的 drawable，这里只兜住通知图标视图
+            CachingIconViewClass.resolve().optional().firstMethodOrNull {
                 name = "setImageDrawable"
                 parameters(Drawable::class)
             }?.hook()?.before {
