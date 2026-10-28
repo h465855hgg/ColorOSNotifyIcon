@@ -240,4 +240,5 @@
     <string name="config_bulk_overlay_off">No override</string>
     <string name="config_bulk_done">Done</string>
     <string name="config_bulk_applied">Updated %1$d apps</string>
+    <string name="config_select_mode">Select</string>
 </resources>

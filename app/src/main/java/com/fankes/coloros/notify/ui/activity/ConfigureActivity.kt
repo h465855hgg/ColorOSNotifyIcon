@@ -204,6 +204,15 @@ class ConfigureActivity : BaseActivity<ActivityConfigBinding>() {
             stateFilter = if (stateFilter == StateFilter.OVERRIDDEN) StateFilter.ALL else StateFilter.OVERRIDDEN
             refreshAdapterResult(isScrollToTop = true)
         }
+        // 进入多选模式
+        binding.configSelectMode.setOnClickListener {
+            if (isSelecting) exitSelection()
+            else {
+                isSelecting = true
+                selectedPackages.clear()
+                refreshSelectionUi()
+            }
+        }
         // 设置列表元素和 Adapter
         binding.configListView.apply {
             bindAdapter<NotificationIcon>(RecyclerCosmetic.fromLinearVertical(context, rowSpacing = 15.dp)) {

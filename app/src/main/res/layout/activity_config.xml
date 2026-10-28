@@ -210,6 +210,20 @@
                         android:text="@string/config_view_overridden"
                         android:textColor="@color/selector_view_pill_text"
                         android:textSize="13sp" />
+                    <TextView
+                        android:id="@+id/config_select_mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:background="@drawable/bg_button_round"
+                        android:paddingLeft="14dp"
+                        android:paddingTop="7dp"
+                        android:paddingRight="14dp"
+                        android:paddingBottom="7dp"
+                        android:singleLine="true"
+                        android:text="@string/config_select_mode"
+                        android:textColor="@color/colorTextGray"
+                        android:textSize="13sp" />
                 </LinearLayout>
             </HorizontalScrollView>
 
