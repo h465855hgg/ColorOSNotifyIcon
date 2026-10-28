@@ -686,6 +686,24 @@ object SystemUIHooker : YukiBaseHooker() {
     }
 
     /**
+     * 背景色是否接近白色的中性色 - 只有这种情况才需要黑色图标
+     *
+     * 纯按亮度判断会把绿色、浅蓝这类高饱和背景也算成"白"，导致图标被涂成纯黑；
+     * 这里额外要求低饱和，才认为是需要黑字的浅色背景
+     * @return [Boolean]
+     */
+    private fun Int.isNearWhiteNeutral(): Boolean {
+        val r = (this shr 16 and 0xFF) / 255f
+        val g = (this shr 8 and 0xFF) / 255f
+        val b = (this and 0xFF) / 255f
+        val max = maxOf(r, g, b)
+        val min = minOf(r, g, b)
+        val saturation = if (max <= 0f) 0f else (max - min) / max
+        val luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b
+        return saturation <= 0.2f && luminance >= 0.8f
+    }
+
+    /**
      * 创建通知栏自绘图标 - 背景与着色图标都由自绘 [Drawable] 承载
      * @param context 实例
      * @param customTriple [compatCustomIcon] 的结果
@@ -741,7 +759,7 @@ object SystemUIHooker : YukiBaseHooker() {
         return if (isMd3) CustomIconDrawable(
             glyph = glyph,
             badgeColor = newApplyColor,
-            glyphColor = if (newApplyColor.isWhiteColor) Color.BLACK else Color.WHITE,
+            glyphColor = if (newApplyColor.isNearWhiteNeutral()) Color.BLACK else Color.WHITE,
             cornerRadiusPx = ConfigData.notifyIconCornerSize.toPx(context).toFloat(),
             paddingRatio = padRatio,
             referenceSidePx = if (viewSizePx > 0) viewSizePx.toFloat() else headerIconSizeOf(context).toFloat()
